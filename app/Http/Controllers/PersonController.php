@@ -5,17 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\Person;
 use App\Http\Requests\StorePersonRequest;
 use App\Http\Requests\UpdatePersonRequest;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Cache;
+use Psr\SimpleCache\InvalidArgumentException;
 
 class PersonController extends Controller
 {
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return Application|Factory|View
+     * @throws InvalidArgumentException
      */
-    public function index()
+    public function index(): View|Factory|Application
     {
-        //
+        $people = Cache::store('redis')->get('people', null);
+        if ($people === null) {
+            $people = Person::all()->sortBy('name')->take(1000);
+            Cache::store('redis')->put('people', $people, 60);
+        }
+        return view('people.index', compact('people'));
     }
 
     /**
@@ -31,7 +42,7 @@ class PersonController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \App\Http\Requests\StorePersonRequest  $request
+     * @param \App\Http\Requests\StorePersonRequest $request
      * @return \Illuminate\Http\Response
      */
     public function store(StorePersonRequest $request)
@@ -42,7 +53,7 @@ class PersonController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Person  $person
+     * @param \App\Models\Person $person
      * @return \Illuminate\Http\Response
      */
     public function show(Person $person)
@@ -53,7 +64,7 @@ class PersonController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\Models\Person  $person
+     * @param \App\Models\Person $person
      * @return \Illuminate\Http\Response
      */
     public function edit(Person $person)
@@ -64,8 +75,8 @@ class PersonController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \App\Http\Requests\UpdatePersonRequest  $request
-     * @param  \App\Models\Person  $person
+     * @param \App\Http\Requests\UpdatePersonRequest $request
+     * @param \App\Models\Person $person
      * @return \Illuminate\Http\Response
      */
     public function update(UpdatePersonRequest $request, Person $person)
@@ -76,7 +87,7 @@ class PersonController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Person  $person
+     * @param \App\Models\Person $person
      * @return \Illuminate\Http\Response
      */
     public function destroy(Person $person)
