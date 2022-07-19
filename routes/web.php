@@ -18,7 +18,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/people',[PersonController::class,'index']);
+Route::get('/people/{month?}/{year?}',[PersonController::class,'index']);
 
 Route::get('/dashboard', function () {
     return view('dashboard');
