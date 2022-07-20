@@ -19,10 +19,12 @@
 <body>
 <div class="container">
     <h1>People</h1>
-    @foreach ($people as $person)
-        <li>{{ $person->name}} {{$person->dob}}</li>
-    @endforeach
+    @if(is_array($people) && count($people) > 0)
+        @foreach ($people as $person)
+            <li>{{ $person->name}} {{$person->dob}}</li>
+        @endforeach
+        {{ $people->onEachSide(2)->links('vendor.pagination.bootstrap-5') }}
+    @endif
 </div>
-{{ $people->onEachSide(2)->links('vendor.pagination.bootstrap-5') }}
 </body>
 </html>
