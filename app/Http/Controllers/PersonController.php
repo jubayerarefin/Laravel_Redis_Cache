@@ -38,31 +38,6 @@ class PersonController extends Controller
             ])->validate();
 
             /*
-             * Uses SETEX to store the data in the cache for a period of time.
-            //Pull data from the cache if it exists
-            $people = Cache::tags([$validatedData['month'], $validatedData['year']])->get('people', null);
-
-            //If the data is not in the cache, pull it from the database
-            if ($people === null) {
-                //Clear cache is the filter parameters are changed
-                Cache::flush();
-
-                $query = DB::table('people');
-
-                if ($validatedData['month']) {
-                    $query->whereMonth('dob', $validatedData['month']);
-                }
-
-                if ($validatedData['year']) {
-                    $query->whereYear('dob', $validatedData['year']);
-                }
-
-                $people = $query->get();
-
-                //Cache all fetched data for the next request
-                Cache::tags([$validatedData['month'], $validatedData['year']])->put('people', $people, 60);
-            }*/
-            /*
              * Uses Sorted Set to store the data in the cache for a period of time.
              */
             if ($this->client->zcard('people') > 0) {
