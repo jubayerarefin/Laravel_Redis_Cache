@@ -19,7 +19,7 @@
 <body>
 <div class="container">
     <h1>People</h1>
-    @if(is_array($people) && count($people) > 0)
+    @if(count($people->toArray()['data']) > 0)
         @foreach ($people as $person)
             <li>{{ $person->name}} {{$person->dob}}</li>
         @endforeach
