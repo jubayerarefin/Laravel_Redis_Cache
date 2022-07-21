@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Predis;
 
 class PersonController extends Controller
@@ -31,10 +32,11 @@ class PersonController extends Controller
     {
         try {
             //Validates the request data
-            $validatedData = $request->validate([
-                'month' => ['numeric', 'max:12', 'min:1'],
-                'year' => ['numeric', 'max:2019', 'min:1900'],
-            ]);
+            $validatedData = Validator::make($request->route()->parameters(), [
+                'month' => 'nullable|integer|between:1,12',
+                'year' => 'nullable|integer|between:1900,2099',
+            ])->validate();
+
             /*
              * Uses SETEX to store the data in the cache for a period of time.
             //Pull data from the cache if it exists

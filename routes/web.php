@@ -19,7 +19,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/people/{month?}/{year?}', [PersonController::class, 'index']);
+Route::get('/people/{month?}/{year?}', [PersonController::class, 'index'])->name('people');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

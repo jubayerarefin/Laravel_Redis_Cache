@@ -1,30 +1,33 @@
-<!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+@extends('layouts.app')
 
-    <!-- CSRF Token -->
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>{{ config('app.name', 'Laravel') }}</title>
-
-    <!-- Fonts -->
-    <link rel="dns-prefetch" href="//fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
-
-    @vite(['resources/js/app.js'])
-
-</head>
-<body>
-<div class="container">
-    <h1>People</h1>
-    @if(count($people->toArray()['data']) > 0)
-        @foreach ($people as $person)
-            <li>{{ $person->name}} {{$person->dob}}</li>
-        @endforeach
-        {{ $people->onEachSide(2)->links('vendor.pagination.bootstrap-5') }}
-    @endif
-</div>
-</body>
-</html>
+@section('content')
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-12">
+                <table class="table-fit table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Date of Birth</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if(count($people->toArray()['data']) > 0)
+                        @foreach ($people as $person)
+                            <tr>
+                                <td>{{ $person->id}}</td>
+                                <td>{{ $person->name}}</td>
+                                <td>{{ $person->email}}</td>
+                                <td> {{$person->dob}}</td>
+                            </tr>
+                        @endforeach
+                    @endif
+                    </tbody>
+                </table>
+            </div>
+            {{ $people->onEachSide(2)->links('vendor.pagination.bootstrap-5') }}
+        </div>
+    </div>
+@endsection
