@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Library\RedisCachePaginator\RedisCachePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Predis;
@@ -29,12 +29,14 @@ class PersonController extends Controller
 
             $month = Arr::has($validatedData, 'month') ? $validatedData['month'] : null;
             $year = Arr::has($validatedData, 'year') ? $validatedData['year'] : null;
+            //Must select one option
             if ($month == null && $year == null) {
                 return redirect()->route('people', ['month' => 1, 'year' => 1900]);
             }
+            //Create Redis Cache Key
             $key = 'M' . $month . '-Y' . $year;
 
-            //Uses Sorted Set to store the data in the cache for a period of time.
+            //Uses Sorted Set to store the data in the cache for a certain period of time.
             if ($this->client->zcard($key) <= 0) {
                 $this->client->flushall();
                 $query = DB::table('people');
@@ -55,27 +57,13 @@ class PersonController extends Controller
                 $this->client->expire($key, '60');
             }
 
-            $cachedData = $this->getCachedData($key, 0, -1);
-
-            $paginatedData = $cachedData->paginate(20)->withQueryString();
+            //Paginates the Cached data using RedisCachePaginator
+            $redisCachePaginator = new RedisCachePaginator($this->client, 20);
+            $paginatedData = $redisCachePaginator->paginate($key)->withQueryString();
 
             return view('people.index', compact('paginatedData'));
         } catch (\Exception $e) {
-            dump($e->getMessage(), $e->getLine());
+            dump('Message:' . $e->getMessage(), 'Line:' . $e->getLine(), 'File:' . $e->getFile());
         }
-    }
-
-    /**
-     * @param String $key
-     * @param Int $start
-     * @param Int $end
-     * @return Collection
-     */
-    private function getCachedData(string $key, int $start, int $end): Collection
-    {
-        $sorted_set = $this->client->zrange($key, $start, $end);
-        return collect($sorted_set)->map(function ($person) {
-            return json_decode($person);
-        });
     }
 }
