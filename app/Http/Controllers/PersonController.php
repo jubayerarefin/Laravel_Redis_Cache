@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Predis;
@@ -15,59 +12,56 @@ use Predis;
 class PersonController extends Controller
 {
     private Predis\Client $client;
-    private Collection $people;
 
     public function __construct()
     {
         $this->client = new Predis\Client('tcp://localhost:6379');
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @param Request $request
-     * @return Application|Factory|View
-     */
-    public function index(Request $request): View|Factory|Application
+    public function index(Request $request)
     {
         try {
             //Validates the request data
-            $validatedData = Validator::make($request->route()->parameters(), [
+            $validatedData = Validator::make($request->all(), [
                 'month' => 'nullable|integer|between:1,12',
-                'year' => 'nullable|integer|between:1900,2099',
+                'year' => 'nullable|integer|between:1900,2019',
             ])->validate();
 
-            /*
-             * Uses Sorted Set to store the data in the cache for a period of time.
-             */
-            if ($this->client->zcard('people') > 0) {
-                $this->people = $this->getCachedData('people', 0, -1);
-            } else {
+            $month = Arr::has($validatedData, 'month') ? $validatedData['month'] : null;
+            $year = Arr::has($validatedData, 'year') ? $validatedData['year'] : null;
+            if ($month == null && $year == null) {
+                return redirect()->route('people', ['month' => 1, 'year' => 1900]);
+            }
+            $key = 'M' . $month . '-Y' . $year;
+
+            //Uses Sorted Set to store the data in the cache for a period of time.
+            if ($this->client->zcard($key) <= 0) {
+                $this->client->flushall();
                 $query = DB::table('people');
 
-                if ($validatedData['month']) {
-                    $query->whereMonth('dob', $validatedData['month']);
+                if ($month) {
+                    $query->whereMonth('dob', $month);
                 }
 
-                if ($validatedData['year']) {
-                    $query->whereYear('dob', $validatedData['year']);
+                if ($year) {
+                    $query->whereYear('dob', $year);
                 }
 
-                $this->people = $query->get()
-                    ->map(function ($person) {
-                        $this->client->zadd("people", [json_encode($person) => $person->id]);
+                $query->get()
+                    ->map(function ($person) use ($key) {
+                        $this->client->zadd($key, [json_encode($person) => $person->id]);
                         return (array)$person;
                     });
-                $this->client->expire('people', '60');
-                $this->people = $this->getCachedData('people', 0, -1);
+                $this->client->expire($key, '60');
             }
-            //Test Ends
 
-            $people = $this->people->paginate(20)->withQueryString();
+            $cachedData = $this->getCachedData($key, 0, -1);
 
-            return view('people.index', compact('people'));
+            $paginatedData = $cachedData->paginate(20)->withQueryString();
+
+            return view('people.index', compact('paginatedData'));
         } catch (\Exception $e) {
-            return view('people.index', compact($e->getMessage()));
+            dump($e->getMessage(), $e->getLine());
         }
     }
 

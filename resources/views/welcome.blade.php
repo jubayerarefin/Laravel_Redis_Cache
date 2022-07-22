@@ -8,7 +8,7 @@
                     <div class="card-header">{{ __('Browse People') }}</div>
                     <div class="card-body">
                         <a class="link-primary"
-                           href="{{ url('people',['month' => 1,'year' => 2019]) }}">
+                           href="{{ route('people',['month' => 1,'year' => 2019]) }}">
                             Show Peoples List
                         </a>
                     </div>
