@@ -5,7 +5,7 @@
 - It uses a custom Laravel LengthAwarePaginator for fetch only the rows for a single page at a time.
 - It uses a custom Blade directive to display the data in the view.
 - It has 2 filtering options and when the filtering combinations are changed, existing cache is cleared. Fresh data is fetched from the RDBMS and cached in Redis.
-- Queries to the RDBMS are under 250ms.
+- Queries to the RDBMS are under 250ms (most of the time way less than 200ms).
  
 # Installation
 - Assuming a database is already created in PostgreSQL and is running at 5432 port.
@@ -14,7 +14,8 @@
 - Install composer dependencies by `composer install`.
 - Run `php artisan telescope:install`
 - Run `npm install && npm run build`
-- Run `php artisan migrate` (The dump file contains the schema as well as the demo data)
+- Run `php artisan migrate`
+- Run `php artisan import:csv test-data.csv` (this will import the test data into the database or you can import into the table by using pgAdmin)
 - Run `php artisan serve --port=80`
-- Open http://localhost:80/
-- Open http://localhost:80/telescope/
+- Open `http://localhost:80/`
+- Open `http://localhost:80/telescope/` (use this monitor the performance of the application)
