@@ -14,6 +14,7 @@
 - Install composer dependencies by `composer install`.
 - Run `php artisan telescope:install`
 - Run `npm install && npm run build`
+- Run `php artisan migrate` (The dump file contains the schema as well as the demo data)
 - Run `php artisan serve --port=80`
 - Open http://localhost:80/
 - Open http://localhost:80/telescope/
