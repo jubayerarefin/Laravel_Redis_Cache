@@ -9,3 +9,10 @@ Design the database schema in a way that queries to PostgreSQL would not take lo
 Display results to the user in a paginated table, with 20 rows per page. Pagination must retrieve data from Redis cache if it is available.
 
 NOTE: Page number must not be a part of cache key. Instead, all rows from database that match filtering criteria (month, year) must be stored in Redis, and pagination should retrieve only the required rows from Redis.
+
+Reference:
+
+1. https://stackoverflow.com/questions/35477172/laravel-and-redis-scan
+2. https://redis.io/commands/scan/
+3. https://laravel.com/docs/9.x/cache#storing-items-in-the-cache
+4. https://laravel.com/docs/9.x/cache#retrieving-items-from-the-cache

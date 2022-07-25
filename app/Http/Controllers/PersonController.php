@@ -2,85 +2,68 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Person;
-use App\Http\Requests\StorePersonRequest;
-use App\Http\Requests\UpdatePersonRequest;
+use App\Library\RedisCachePaginator\RedisCachePaginator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Predis;
 
 class PersonController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    private Predis\Client $client;
+
+    public function __construct()
     {
-        //
+        $this->client = new Predis\Client('tcp://localhost:6379');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function index(Request $request)
     {
-        //
-    }
+        try {
+            //Validates the request data
+            $validatedData = Validator::make($request->all(), [
+                'month' => 'nullable|integer|between:1,12',
+                'year' => 'nullable|integer|between:1900,2019',
+            ])->validate();
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \App\Http\Requests\StorePersonRequest  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(StorePersonRequest $request)
-    {
-        //
-    }
+            $month = Arr::has($validatedData, 'month') ? $validatedData['month'] : null;
+            $year = Arr::has($validatedData, 'year') ? $validatedData['year'] : null;
+            //Must select one option
+            if ($month == null && $year == null) {
+                return redirect()->route('people', ['month' => 1, 'year' => 1900]);
+            }
+            //Create Redis Cache Key
+            $key = 'M' . $month . '-Y' . $year;
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Person  $person
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Person $person)
-    {
-        //
-    }
+            //Uses Sorted Set to store the data in the cache for a certain period of time.
+            if ($this->client->zcard($key) <= 0) {
+                $this->client->flushall();
+                $query = DB::table('people');
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Person  $person
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Person $person)
-    {
-        //
-    }
+                if ($month) {
+                    $query->whereMonth('dob', $month);
+                }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \App\Http\Requests\UpdatePersonRequest  $request
-     * @param  \App\Models\Person  $person
-     * @return \Illuminate\Http\Response
-     */
-    public function update(UpdatePersonRequest $request, Person $person)
-    {
-        //
-    }
+                if ($year) {
+                    $query->whereYear('dob', $year);
+                }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Person  $person
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Person $person)
-    {
-        //
+                $query->get()
+                    ->map(function ($person) use ($key) {
+                        $this->client->zadd($key, [json_encode($person) => $person->id]);
+                        return (array)$person;
+                    });
+                $this->client->expire($key, '60');
+            }
+
+            //Paginates the Cached data using RedisCachePaginator
+            $redisCachePaginator = new RedisCachePaginator($this->client, 20);
+            $paginatedData = $redisCachePaginator->paginate($key)->withQueryString();
+
+            return view('people.index', compact('paginatedData'));
+        } catch (\Exception $e) {
+            dump('Message:' . $e->getMessage(), 'Line:' . $e->getLine(), 'File:' . $e->getFile());
+        }
     }
 }
